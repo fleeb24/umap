@@ -5,3 +5,6 @@ venv
 .idea/vcs.xml
 .idea/workspace.xml
 .idea/dictionaries
+extra/
+__pycache__/
+
