@@ -1585,15 +1585,18 @@ class UMAP(BaseEstimator):
                     " with a count of ",
                     counts[most_common],
                 )
+            X = X[index]
         # If we aren't asking for unique use the full index.
         # This will save special cases later.
         else:
             index = list(range(X.shape[0]))
             inverse = list(range(X.shape[0]))
+            index = None
+            inverse = None
 
         # Error check n_neighbors based on data size
-        if X[index].shape[0] <= self.n_neighbors:
-            if X[index].shape[0] == 1:
+        if X.shape[0] <= self.n_neighbors:
+            if X.shape[0] == 1:
                 self.embedding_ = np.zeros(
                     (1, self.n_components)
                 )  # needed to sklearn comparability
@@ -1603,7 +1606,7 @@ class UMAP(BaseEstimator):
                 "n_neighbors is larger than the dataset size; truncating to "
                 "X.shape[0] - 1"
             )
-            self._n_neighbors = X[index].shape[0] - 1
+            self._n_neighbors = X.shape[0] - 1
         else:
             self._n_neighbors = self.n_neighbors
 
@@ -1622,21 +1625,21 @@ class UMAP(BaseEstimator):
             print("Construct fuzzy simplicial set")
 
         # Handle small cases efficiently by computing all distances
-        if X[index].shape[0] < 4096 and not self.force_approximation_algorithm:
+        if X.shape[0] < 4096 and not self.force_approximation_algorithm:
             self._small_data = True
             try:
                 dmat = pairwise_distances(
-                    X[index], metric=self.metric, **self._metric_kwds
+                    X, metric=self.metric, **self._metric_kwds
                 )
             except (ValueError, TypeError) as e:
                 # metric is not supported by sklearn,
                 # fallback to pairwise special
                 if self._sparse_data:
                     dmat = dist.pairwise_special_metric(
-                        X[index].toarray(), metric=self.metric
+                        X.toarray(), metric=self.metric
                     )
                 else:
-                    dmat = dist.pairwise_special_metric(X[index], metric=self.metric)
+                    dmat = dist.pairwise_special_metric(X, metric=self.metric)
             self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set(
                 dmat,
                 self._n_neighbors,
@@ -1655,7 +1658,7 @@ class UMAP(BaseEstimator):
             self._small_data = False
             # Standard case
             (self._knn_indices, self._knn_dists, self._rp_forest) = nearest_neighbors(
-                X[index],
+                X,
                 self._n_neighbors,
                 self.metric,
                 self._metric_kwds,
@@ -1667,7 +1670,7 @@ class UMAP(BaseEstimator):
             )
 
             self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set(
-                X[index],
+                X,
                 self.n_neighbors,
                 random_state,
                 self.metric,
@@ -1682,7 +1685,7 @@ class UMAP(BaseEstimator):
             )
 
             self._search_graph = scipy.sparse.lil_matrix(
-                (X[index].shape[0], X[index].shape[0]), dtype=np.int8
+                (X.shape[0], X.shape[0]), dtype=np.int8
             )
             self._search_graph.rows = self._knn_indices
             self._search_graph.data = (self._knn_dists != 0).astype(np.int8)
@@ -1748,7 +1751,9 @@ class UMAP(BaseEstimator):
                         len_x=len_X, len_y=len(y)
                     )
                 )
-            y_ = check_array(y, ensure_2d=False)[index]
+            y_ = check_array(y, ensure_2d=False)
+            if index is not None:
+                y_ = y_[index]
             if self.target_metric == "categorical":
                 if self.target_weight < 1.0:
                     far_dist = 2.5 * (1.0 / (1.0 - self.target_weight))
@@ -1840,7 +1845,7 @@ class UMAP(BaseEstimator):
             print(ts(), "Construct embedding")
 
         self.embedding_ = simplicial_set_embedding(
-            self._raw_data[index],  # JH why raw data?
+            self._raw_data,#[index],  # JH why raw data?
             self.graph_,
             self.n_components,
             self._initial_alpha,
@@ -1858,7 +1863,10 @@ class UMAP(BaseEstimator):
             self.output_metric in ("euclidean", "l2"),
             self.random_state is None,
             self.verbose,
-        )[inverse]
+        )#[inverse]
+
+        # if inverse is not None:
+        #     self.embedding_ = self.embedding_[inverse]
 
         if self.verbose:
             print(ts() + " Finished embedding")
