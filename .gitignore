@@ -7,4 +7,4 @@ venv
 .idea/dictionaries
 extra/
 __pycache__/
-
+_local/
