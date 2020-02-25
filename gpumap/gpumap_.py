@@ -1766,6 +1766,9 @@ class GPUMAP(BaseEstimator):
 				self.use_gpu,
 			)
 
+			self._sigmas = cp.asnumpy(self._sigmas).astype(np.float32)
+			self._rhos = cp.asnumpy(self._rhos).astype(np.float32)
+
 			# GPU version does not use NN-Descent, so the search graph used for
 			# transform() is not needed and not stored.
 			if not self.use_gpu:
@@ -1986,9 +1989,6 @@ class GPUMAP(BaseEstimator):
 			dists, self._n_neighbors, local_connectivity=adjusted_local_connectivity,
 			use_gpu=self.use_gpu
 		)
-
-		# self._sigmas = sigmas
-		# self._rhos = rhos
 
 		rows, cols, vals = compute_membership_strengths(indices, dists, sigmas, rhos)
 
