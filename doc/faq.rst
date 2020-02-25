@@ -79,41 +79,25 @@ show the underlying detail that can otherwise be lost. We
 highly recommend investing the time to learn datashader for
 UMAP plot particularly for larger datasets.
 
-I ran out of memory. Help!
---------------------------
-
-For some datasets the default options for approximate
-nearest neighbor search can result in excessive memory use.
-If your dataset is not especially large but you have found
-that UMAP runs out of memory when operating on it consider
-using the ``low_memory=True`` option, which will switch
-to a slower but less memory intensive approach to computing
-the approximate nearest neighbors. This may alleviate your
-issues.
-
-UMAP is eating all my cores. Help!
-----------------------------------
-
-If run without a random seed UMAP will use numba's parallel
-implementation to do multithreaded work and use many cores.
-By default this will make use of as many cores as are available.
-If you are on a shared machine or otherwise don't wish to
-use *all* the cores at once you can restrict the number of
-threads that numba uses by making use of the environment
-variable ``NUMBA_NUM_THREADS``; see the `numba
-documentation <https://numba.pydata.org/numba-doc/dev/reference/envvars.html#threading-control>`__
-for more details.
-
 Is there GPU or multicore-CPU support?
 --------------------------------------
 
-There is basic multicore support as of version 0.4.
-In the future it is possible that GPU support may
-be added.
-
-There is a UMAP implementation for GPU available in
-the NVIDIA RAPIDS cuML library, so if you need GPU
-support that is currently the best palce to go.
+Not at this time. The bottlenecks in the code are the
+(approximate) nearest neighbor search and the optimization
+of the low dimensional representation. The first of these
+(ANN) is performed by a random projection forest and
+nearest-neighbor-descent. Both of those are, at the least,
+parellelisable in principle, and could be converted to
+support multicore (at the cost of single core performance).
+The optimization is performed via a (slightly custom)
+stochastic gradient descent. SGD is both parallelisable
+and amenable to GPUs. This means that in principle UMAP
+could support multicore and use GPUs for optimization.
+In practice this would involve GPU expertise and would
+potentially hurt single core performance, and so has
+been deferred for now. If you have expertise in GPU
+programming with Numba and would be interested in
+adding GPU support we would welcome your contributions.
 
 Can I add a custom loss function?
 ---------------------------------
@@ -129,7 +113,7 @@ a library for t-SNE, LargeVis, UMAP, and related algorithms.
 Smallvis only works for small datasets, but provides
 much greater flexibility and control.
 
-Is there support for the R language?
+Is the support for the R language?
 ----------------------------------
 
 Yes! A number of people have worked hard to make UMAP
@@ -137,20 +121,14 @@ available to R users.
 
 If you want to use the reference
 implementation under the hood but want a nice R interface
-then we recommend `umap <https://github.com/tkonopka/umap>`_,
-which wraps the python code with 
-`reticulate <https://rstudio.github.io/reticulate/>`_.
-Another reticulate interface is 
-`umapr <https://github.com/ropenscilabs/umapr>`_, but it
-may not be under active development.
+the we recommend `umapr <https://github.com/ropenscilabs/umapr>`_
+which wraps the python code with reticulate.
 
-If you want a pure R version then we recommend
-`uwot <https://github.com/jlmelville/uwot>`_ at this time. 
-`umap <https://github.com/tkonopka/umap>`_ also provides
-a pure R implementation in addition to its reticulate
-wrapper.
-
-Both umap and uwot are available on CRAN.
+If you want a pure R version then there are a couple
+of options: `UMAP <https://github.com/tkonopka/umap>`_
+and `UWOT <https://github.com/jlmelville/uwot>`_. Both are good
+reimplementations of UMAP in R. If performance is
+a major factor we recommend UWOT at this time.
 
 Is there a C/C++ implementation?
 --------------------------------
@@ -186,15 +164,15 @@ It is worth checking the
 for potential solutions. If all else fails please add an
 `issue on github <https://github.com/lmcinnes/umap/issues/new>`_.
 
-What is the difference between PCA / UMAP / VAEs?
+What is the difference between UMAP / VAEs / PCA?
 -------------------------------------------------
 
 This is an example of an embedding for a popular Fashion MNIST dataset.
 
 .. figure:: images/umap_vae_pca.png
-    :alt: Comparison of PCA / UMAP / VAE embeddings
+    :alt: Comparison of UMAP / PCA / VAE embeddings
 
-    Comparison of PCA / UMAP / VAE embeddings
+    Comparison of UMAP / PCA / VAE embeddings
 
 Note that FMNIST is mostly a toy dataset (MNIST on steroids).
 On such a simplistic case UMAP shows distillation results
@@ -246,10 +224,5 @@ Successful use-cases
 
 UMAP can be / has been Successfully applied to the following domains:
 
-- Single cell data visualization in biology;
-- Mapping malware based on behavioural data;
 - Pre-processing phrase vectors for clustering;
 - Pre-processing image embeddings (Inception) for clustering;
-
-and many more -- if you have a successful use-case please submit
-a pull request adding it to this list!
